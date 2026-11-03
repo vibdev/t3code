@@ -2102,7 +2102,9 @@ const make = Effect.gen(function* () {
                   (input.bindToCurrentThread !== false &&
                     scheduledTaskThreadMode(existing) === "fresh_session"))
                 ? "fresh_session"
-                : threadId === null
+                : threadId === null &&
+                    (input.bindToCurrentThread === false ||
+                      scheduledTaskThreadMode(existing) === "new_thread")
                   ? "new_thread"
                   : "continue",
           workspaceStrategy,
