@@ -2514,6 +2514,9 @@ export default function ChatView(props: ChatViewProps) {
   };
   const freshSessionAvailable =
     activeMessageCount > 0 && serverConfig?.environment.capabilities.freshContext === true;
+  // While a question or approval owns the composer, its text answers that, not the agent.
+  const freshSessionCommandAvailable =
+    freshSessionAvailable && activePendingApproval === null && pendingUserInputs.length === 0;
   const freshSessionArmed = useFreshSessionArmed(routeThreadKey);
   const toggleKeepFullHistory = () => setKeepFullHistory(routeThreadKey, !keepFullHistory);
   const toggleKeepFullHistoryStable = useStableCallback(toggleKeepFullHistory);
@@ -2934,7 +2937,7 @@ export default function ChatView(props: ChatViewProps) {
     panelAnimationsActive,
     panelAnimationDurationMs,
     keepFullHistory,
-    freshSessionAvailable,
+    freshSessionAvailable: freshSessionCommandAvailable,
     resumeCompactionTokens,
     showPlanFollowUpPrompt,
     usageLimitsKey,
@@ -3654,11 +3657,7 @@ export default function ChatView(props: ChatViewProps) {
                               sideChatAvailable={sideChat.available}
                               sideChatDisabledReason={sideChatDisabledReason}
                               onFreshSession={
-                                freshSessionAvailable &&
-                                activePendingApproval === null &&
-                                pendingUserInputs.length === 0
-                                  ? armFreshSessionStable
-                                  : undefined
+                                freshSessionCommandAvailable ? armFreshSessionStable : undefined
                               }
                               onUsageLimitsCommand={
                                 usageLimitsOffered &&
