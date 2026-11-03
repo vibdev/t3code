@@ -58,6 +58,7 @@ import {
   type RuntimeMode,
   type ScheduledTask,
   type ScheduledTaskUpsertInput,
+  scheduledTaskThreadMode,
   type ServerProvider,
   type ServerProviderModel,
   ThreadId,
@@ -264,6 +265,7 @@ function scheduledTaskSummary(task: ScheduledTask, mayRun: boolean): Orchestrato
     enabled: task.enabled,
     projectId: task.projectId,
     boundThreadId: task.threadId,
+    freshSession: scheduledTaskThreadMode(task) === "fresh_session",
     schedule: task.schedule,
     nextRunAt: task.nextRunAt,
     lastRunStatus: task.lastRunStatus,
@@ -2007,6 +2009,11 @@ const make = Effect.gen(function* () {
         schedule: input.schedule,
         projectId,
         threadId: bindToCurrentThread && parent !== undefined ? parent.thread.id : null,
+        threadMode: input.freshSession
+          ? "fresh_session"
+          : bindToCurrentThread
+            ? "continue"
+            : "new_thread",
         workspaceStrategy: yield* scheduledTaskWorkspaceStrategy(bindToCurrentThread, projectId),
         modelSelection,
         runtimeMode: limits.runtimeMode,
@@ -2088,6 +2095,16 @@ const make = Effect.gen(function* () {
           schedule: input.schedule ?? existing.schedule,
           projectId: existing.projectId,
           threadId,
+          threadMode:
+            input.freshSession === undefined && input.bindToCurrentThread === undefined
+              ? scheduledTaskThreadMode(existing)
+              : (input.freshSession ??
+                  (input.bindToCurrentThread !== false &&
+                    scheduledTaskThreadMode(existing) === "fresh_session"))
+                ? "fresh_session"
+                : threadId === null
+                  ? "new_thread"
+                  : "continue",
           workspaceStrategy,
           modelSelection: existing.modelSelection,
           runtimeMode: existing.runtimeMode,
